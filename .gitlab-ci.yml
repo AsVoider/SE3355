@@ -1,4 +1,4 @@
-test_lab2:
+test_lab1:
   image: ipadsse302/tigerlabs_score_env
   tags:
     - r743
@@ -6,5 +6,4 @@ test_lab2:
   script:
     - rm -rf scripts testdata
     - cp -r /home/stu/upload.py /home/stu/scripts /home/stu/testdata .
-    - make gradelab2
-
+    - make gradelab1
