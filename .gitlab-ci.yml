@@ -7,3 +7,4 @@ test_lab2:
     - rm -rf scripts testdata
     - cp -r /home/stu/upload.py /home/stu/scripts /home/stu/testdata .
     - make gradelab2
+
