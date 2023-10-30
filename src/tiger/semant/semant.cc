@@ -59,7 +59,7 @@ type::Ty *SubscriptVar::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
 
   auto sub_type = subscript_->SemAnalyze(venv, tenv, labelcount, errormsg);
 
-  if (typeid(*(sub_type->ActualTy())) != typeid(type::IntTy)) {
+  if (sub_type->IsSameType(type::IntTy::Instance())) {
     errormsg->Error(pos_, "not int type in SubscriptVar");
     return type::IntTy::Instance();
   }
@@ -93,7 +93,7 @@ type::Ty *CallExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   auto callee = venv->Look(func_);
   if (callee == nullptr || typeid(*callee) != typeid(env::FunEntry)) {
     errormsg->Error(pos_, "undefined function %s", func_->Name().c_str());
-    return type::NilTy::Instance();
+    return type::VoidTy::Instance();
   }
 
   auto formals = static_cast<env::FunEntry *>(callee)->formals_;
@@ -321,12 +321,12 @@ type::Ty *ArrayExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
   }
 
   auto size_ty = size_->SemAnalyze(venv, tenv, labelcount, errormsg);
-  auto init_ty = init_->SemAnalyze(venv, tenv, labelcount, errormsg);
   if (!size_ty->IsSameType(type::IntTy::Instance())) {
     errormsg->Error(pos_, "size type should be integer");
     return type::VoidTy::Instance();
   }
 
+  auto init_ty = init_->SemAnalyze(venv, tenv, labelcount, errormsg);
   if (!init_ty->IsSameType(static_cast<type::ArrayTy *>(sb_ty)->ty_)) {
     errormsg->Error(pos_, "array type mismatch");
     return type::VoidTy::Instance();
@@ -373,10 +373,7 @@ void FunctionDec::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
       venv->Enter((*param)->name_, new env::VarEntry((*formal)));
     }
     
-    type::Ty *resu = type::VoidTy::Instance();
-    if (func->result_) {
-      resu = tenv->Look(func->result_);
-    }
+    type::Ty *resu = static_cast<env::FunEntry *>(venv->Look(func->name_))->result_;
     auto body_ty = func->body_->SemAnalyze(venv, tenv, labelcount, errormsg);
 
     if (!body_ty->IsSameType(resu)) {
@@ -449,6 +446,11 @@ type::Ty *NameTy::SemAnalyze(env::TEnvPtr tenv, err::ErrorMsg *errormsg) const {
 
 type::Ty *RecordTy::SemAnalyze(env::TEnvPtr tenv,
                                err::ErrorMsg *errormsg) const {
+  if (record_ == nullptr) {
+    errormsg->Error(pos_, "the type field in record is empty");
+    return type::VoidTy::Instance();
+  }
+
   auto filed_list = record_->MakeFieldList(tenv, errormsg);
   return new type::RecordTy(filed_list);
 }
@@ -461,7 +463,7 @@ type::Ty *ArrayTy::SemAnalyze(env::TEnvPtr tenv,
   }
 
   errormsg->Error(pos_, "undefined type %s", array_->Name().data());
-  return new type::ArrayTy(type::IntTy::Instance());
+  return type::VoidTy::Instance();
 }
 
 } // namespace absyn
