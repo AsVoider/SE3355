@@ -122,7 +122,7 @@ type::Ty *OpExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
                             int labelcount, err::ErrorMsg *errormsg) const {
   auto *le = left_->SemAnalyze(venv, tenv, labelcount, errormsg)->ActualTy();
   auto *re = right_->SemAnalyze(venv, tenv, labelcount, errormsg)->ActualTy();
-  if (oper_ == absyn::PLUS_OP || oper_ == absyn::DIVIDE_OP || oper_ == absyn::TIMES_OP || oper_ == absyn::MINUS_OP) {
+  if (oper_ == absyn::PLUS_OP || oper_ == absyn::DIVIDE_OP || oper_ == absyn::TIMES_OP || oper_ == absyn::MINUS_OP || oper_ == absyn::AND_OP || oper_ == absyn::OR_OP) {
     if (typeid(*le) != typeid(type::IntTy)) {
       errormsg->Error(left_->pos_, "integer required");
     }
@@ -131,6 +131,16 @@ type::Ty *OpExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     }
     return type::IntTy::Instance();
   }
+
+  if (oper_ == absyn::LE_OP || oper_ == absyn::LT_OP || oper_ == absyn::GE_OP || oper_ == absyn::GT_OP || oper_ == absyn::EQ_OP || oper_ == absyn::NEQ_OP) {
+    if ((!le->IsSameType(type::IntTy::Instance())) && (!le->IsSameType(type::StringTy::Instance()))) {
+      errormsg->Error(left_->pos_, "left integer or string required");
+    }
+    if((!re->IsSameType(type::IntTy::Instance())) && (!re->IsSameType(type::StringTy::Instance()))) {
+      errormsg->Error(right_->pos_, "right integer or string required");
+    }
+  }
+
   if(!le->IsSameType(re)) {
     errormsg->Error(pos_, "same type required");
   }
