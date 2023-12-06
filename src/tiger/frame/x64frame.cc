@@ -1,17 +1,17 @@
 #include "tiger/frame/x64frame.h"
-
+#include <sstream>
+#include <list>
 extern frame::RegManager *reg_manager;
 
 namespace frame {
-
 /* TODO: Put your lab5 code here */
-X64RegManager::X64RegManager() : RegManager() {
+X64RegManager::X64RegManager(){
   temp::Temp *rax = temp::TempFactory::NewTemp();
   temp::Temp *rbx = temp::TempFactory::NewTemp();
   temp::Temp *rcx = temp::TempFactory::NewTemp();
   temp::Temp *rdx = temp::TempFactory::NewTemp();
-  temp::Temp *rdi = temp::TempFactory::NewTemp();
   temp::Temp *rsi = temp::TempFactory::NewTemp();
+  temp::Temp *rdi = temp::TempFactory::NewTemp();
   temp::Temp *rbp = temp::TempFactory::NewTemp();
   temp::Temp *rsp = temp::TempFactory::NewTemp();
   temp::Temp *r8 = temp::TempFactory::NewTemp();
@@ -23,29 +23,29 @@ X64RegManager::X64RegManager() : RegManager() {
   temp::Temp *r14 = temp::TempFactory::NewTemp();
   temp::Temp *r15 = temp::TempFactory::NewTemp();
 
-  std::string *rax_ = new std::string("rax");
-  std::string *rbx_ = new std::string("rbx");
-  std::string *rcx_ = new std::string("rcx");
-  std::string *rdx_ = new std::string("rdx");
-  std::string *rdi_ = new std::string("rdi");
-  std::string *rsi_ = new std::string("rsi");
-  std::string *rbp_ = new std::string("rbp");
-  std::string *rsp_ = new std::string("rsp");
-  std::string *r8_ = new std::string("r8");
-  std::string *r9_ = new std::string("r9");
-  std::string *r10_ = new std::string("r10");
-  std::string *r11_ = new std::string("r11");
-  std::string *r12_ = new std::string("r12");
-  std::string *r13_ = new std::string("r13");
-  std::string *r14_ = new std::string("r14");
-  std::string *r15_ = new std::string("r15");
+  std::string *rax_ = new std::string("%rax");
+  std::string *rbx_ = new std::string("%rbx");
+  std::string *rcx_ = new std::string("%rcx");
+  std::string *rdx_ = new std::string("%rdx");
+  std::string *rsi_ = new std::string("%rsi");
+  std::string *rdi_ = new std::string("%rdi");
+  std::string *rbp_ = new std::string("%rbp");
+  std::string *rsp_ = new std::string("%rsp");
+  std::string *r8_ = new std::string("%r8");
+  std::string *r9_ = new std::string("%r9");
+  std::string *r10_ = new std::string("%r10");
+  std::string *r11_ = new std::string("%r11");
+  std::string *r12_ = new std::string("%r12");
+  std::string *r13_ = new std::string("%r13");
+  std::string *r14_ = new std::string("%r14");
+  std::string *r15_ = new std::string("%r15");
 
   this->regs_.emplace_back(rax);
   this->regs_.emplace_back(rbx);
   this->regs_.emplace_back(rcx);
   this->regs_.emplace_back(rdx);
-  this->regs_.emplace_back(rdi);
   this->regs_.emplace_back(rsi);
+  this->regs_.emplace_back(rdi);
   this->regs_.emplace_back(rbp);
   this->regs_.emplace_back(rsp);
   this->regs_.emplace_back(r8);
@@ -61,8 +61,8 @@ X64RegManager::X64RegManager() : RegManager() {
   this->temp_map_->Enter(rbx, rbx_);
   this->temp_map_->Enter(rcx, rcx_);
   this->temp_map_->Enter(rdx, rdx_);
-  this->temp_map_->Enter(rdi, rdi_);
   this->temp_map_->Enter(rsi, rsi_);
+  this->temp_map_->Enter(rdi, rdi_);
   this->temp_map_->Enter(rbp, rbp_);
   this->temp_map_->Enter(rsp, rsp_);
   this->temp_map_->Enter(r8, r8_);
@@ -85,11 +85,11 @@ temp::TempList *X64RegManager::Registers() {
 }
 
 temp::TempList *X64RegManager::ArgRegs() {
-  return new temp::TempList({this->regs_[4], this->regs_[5], this->regs_[3], this->regs_[2], this->regs_[8], this->regs_[9]});
+  return new temp::TempList({this->regs_[5], this->regs_[4], this->regs_[3], this->regs_[2], this->regs_[8], this->regs_[9]});
 }
 
 temp::TempList *X64RegManager::CallerSaves() {
-    return new temp::TempList({this->regs_[4], this->regs_[5], this->regs_[3], this->regs_[2], this->regs_[8], this->regs_[9], this->regs_[0], this->regs_[10], this->regs_[11]});
+    return new temp::TempList({this->regs_[5], this->regs_[4], this->regs_[3], this->regs_[2], this->regs_[8], this->regs_[9], this->regs_[0], this->regs_[10], this->regs_[11]});
 }
 
 temp::TempList *X64RegManager::CalleeSaves() {
@@ -115,7 +115,10 @@ temp::Temp *X64RegManager::ReturnValue() {
   return regs_[0];
 }
 
-X64Frame::X64Frame(temp::Label *name, std::list<bool> formals) {
+X64Frame::X64Frame(temp::Label *name,std::list<bool> &formals) : Frame(name, formals){
+  if(name->Name() == "tigermain"){
+    return;
+  }
   labels_ = name;
   auto reg_list = reg_manager->ArgRegs()->GetList();
   auto frameptr = new tree::TempExp(reg_manager->FramePointer());
@@ -179,6 +182,23 @@ std::list<tree::Stm *> ProcEntryExit1(Frame *frame, tree::Stm *stm) {
     stmlist.emplace_back(new tree::MoveStm(new tree::TempExp(*callee_iter), new tree::TempExp(*save_iter)));
   }
   return stmlist;
+}
+
+assem::InstrList *ProcEntryExit2(assem::InstrList* body) {
+  body->Append(new assem::OperInstr("", new temp::TempList(), reg_manager->ReturnSink(), nullptr));
+  return body;
+}
+
+assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList *body) {
+  std::stringstream pre;
+  pre << ".set " << frame->labels_->Name() << "_framesize, " << std::to_string(-frame->offset_) << std::endl;
+  pre << frame->labels_->Name() << ":" << std::endl;
+  pre << "subq $" << -frame->offset_ << ", %rsp" << std::endl;
+
+  std::stringstream epi;
+  epi << "addq $" << -frame->offset_ << ", %rsp" << std::endl;
+  epi << "retq" << std::endl;
+  return new assem::Proc(pre.str(), body, epi.str());
 }
 
 } // namespace frame

@@ -148,6 +148,8 @@ private:
 /* TODO: Put your lab5 code here */
 tree::Exp *ExternalCall(std::string, tree::ExpList *);
 std::list<tree::Stm *> ProcEntryExit1(Frame *frame, tree::Stm *Stm);
+assem::InstrList *ProcEntryExit2(assem::InstrList *body);
+assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList *body);
 } // namespace frame
 
 #endif

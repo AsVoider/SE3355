@@ -59,7 +59,7 @@ type::Ty *SubscriptVar::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
 
   auto sub_type = subscript_->SemAnalyze(venv, tenv, labelcount, errormsg);
 
-  if (sub_type->IsSameType(type::IntTy::Instance())) {
+  if (!sub_type->IsSameType(type::IntTy::Instance())) {
     errormsg->Error(pos_, "not int type in SubscriptVar");
     return type::IntTy::Instance();
   }
@@ -132,7 +132,7 @@ type::Ty *OpExp::SemAnalyze(env::VEnvPtr venv, env::TEnvPtr tenv,
     return type::IntTy::Instance();
   }
 
-  if (oper_ == absyn::LE_OP || oper_ == absyn::LT_OP || oper_ == absyn::GE_OP || oper_ == absyn::GT_OP || oper_ == absyn::EQ_OP || oper_ == absyn::NEQ_OP) {
+  if (oper_ == absyn::LE_OP || oper_ == absyn::LT_OP || oper_ == absyn::GE_OP || oper_ == absyn::GT_OP) {
     if ((!le->IsSameType(type::IntTy::Instance())) && (!le->IsSameType(type::StringTy::Instance()))) {
       errormsg->Error(left_->pos_, "left integer or string required");
     }

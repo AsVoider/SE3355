@@ -165,8 +165,8 @@ tr::ExpAndTy *SimpleVar::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   tree::Exp* sta = nullptr;
   if (typeid(*var_et->access_->access_) == typeid(frame::InFrameAccess)) {
     sta = static_link(level, var_et->access_->level_);
-    sta = var_et->access_->access_->ToExp(sta);
   }
+  sta = var_et->access_->access_->ToExp(sta);
   return new tr::ExpAndTy(new tr::ExExp(sta), var_et->ty_->ActualTy());
 
 }
@@ -493,7 +493,7 @@ tr::ExpAndTy *WhileExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   auto done = temp::LabelFactory::NewLabel();
 
   auto test = test_->Translate(venv, tenv, level, label, errormsg);
-  auto bd = body_->Translate(venv, tenv, level, label, errormsg);
+  auto bd = body_->Translate(venv, tenv, level, done, errormsg);
 
   auto test_cx = test->exp_->UnCx(errormsg);
   test_cx.trues_.DoPatch(body);
@@ -519,35 +519,37 @@ tr::ExpAndTy *ForExp::Translate(env::VEnvPtr venv, env::TEnvPtr tenv,
   auto access = tr::Access::AllocLocal(level, escape_);
   auto acc_limit = tr::Access::AllocLocal(level, false);
   venv->Enter(var_, new env::VarEntry(access, type::IntTy::Instance(), true));
-  auto bdy = body_->Translate(venv, tenv, level, label, errormsg);
+
+  temp::Label *done = temp::LabelFactory::NewLabel();
+  temp::Label *body = temp::LabelFactory::NewLabel();
+  temp::Label *loop = temp::LabelFactory::NewLabel();
+  auto bdy = body_->Translate(venv, tenv, level, done, errormsg);
   auto body_stm = bdy->exp_->UnNx();
 
   auto i = access->access_->ToExp(new tree::TempExp(reg_manager->FramePointer()));
   auto limit = acc_limit->access_->ToExp(nullptr);
   tree::Stm *i_stm = new tree::MoveStm(i, left->exp_->UnEx());
   tree::Stm *lim_stm = new tree::MoveStm(limit, right->exp_->UnEx());
-  auto done = temp::LabelFactory::NewLabel();
-  auto loop = temp::LabelFactory::NewLabel();
-  auto body = temp::LabelFactory::NewLabel();
+  auto label_list = new std::vector<temp::Label*>();
+  label_list->emplace_back(body);
 
-  tree::Stm *test_fin = new tree::CjumpStm(tree::LT_OP, i, limit, loop, done);
+  tree::Stm *first_t = new tree::CjumpStm(tree::GE_OP, i, limit, done, body);
   tree::Stm *test = new tree::CjumpStm(tree::EQ_OP, i, limit, done, loop);
-  tree::Stm *first_t = new tree::CjumpStm(tree::GT_OP, i, limit, done, body);
-
-  tr::Exp *ret = new tr::NxExp(
-    new tree::SeqStm(i_stm, 
-      new tree::SeqStm(lim_stm, 
-          new tree::SeqStm(first_t, 
-              new tree::SeqStm(new tree::LabelStm(body), 
-                new tree::SeqStm(body_stm, 
-                  new tree::SeqStm(test, 
-                    new tree::SeqStm(new tree::LabelStm(loop), 
-                      new tree::SeqStm(new tree::MoveStm(i, new tree::BinopExp(tree::PLUS_OP, i, new tree::ConstExp(1))), 
-                        new tree::SeqStm(body_stm, 
-                          new tree::SeqStm(test_fin, new tree::LabelStm(done)))))))))))
-  );
-
+  
+  auto ret = new tr::NxExp(
+    new tree::SeqStm(i_stm,
+      new tree::SeqStm(lim_stm,
+        new tree::SeqStm(first_t,
+          new tree::SeqStm(new tree::LabelStm(body),
+            new tree::SeqStm(body_stm,
+              new tree::SeqStm(test,
+                new tree::SeqStm(new tree::LabelStm(loop),
+                  new tree::SeqStm(new tree::MoveStm(i, new tree::BinopExp(tree::PLUS_OP, i, new tree::ConstExp(1))),
+                    new tree::SeqStm(new tree::JumpStm(new tree::NameExp(body), new std::vector<temp::Label *>{body}),
+                      new tree::LabelStm(done)))))))))
+  )); 
   venv->EndScope();
+
   return new tr::ExpAndTy(ret, type::VoidTy::Instance());
 }
 

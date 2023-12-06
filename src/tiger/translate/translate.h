@@ -60,7 +60,9 @@ public:
   /* TODO: Put your lab5 code here */
   Level(frame::Frame *frm, Level *pare) : frame_(frm), parent_(pare) { }
   static Level *NewLevel(Level *pare, temp::Label *name, std::list<bool> &escapes) {
-    escapes.emplace_front(true);
+    if (name->Name() != "tigermain") {
+      escapes.emplace_front(true);
+    }
     return new Level(new frame::X64Frame(name, escapes), pare);
   }
 };
@@ -73,7 +75,8 @@ public:
   absyn_tree_(std::move(absyn_tree)), errormsg_(std::move(errormsg)), 
   tenv_(std::make_unique<env::TEnv>()),venv_(std::make_unique<env::VEnv>()) {
     auto main_ = temp::LabelFactory::NamedLabel("tigermain");
-    frame::Frame *main_frame = new frame::X64Frame{main_, {}};
+    std::list<bool> main_list;
+    frame::Frame *main_frame = new frame::X64Frame{main_, main_list};
     main_level_ = std::make_unique<Level>(main_frame, nullptr);
   }
   /**
