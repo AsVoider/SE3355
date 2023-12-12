@@ -71,13 +71,27 @@ protected:
 class Access {
 public:
   /* TODO: Put your lab5 code here */
-  
+  bool is_inframe;
+  Access(bool in) : is_inframe(in) { };  
   virtual ~Access() = default;
+  virtual tree::Exp *ToExp(tree::Exp *f_ptr) const = 0;
   
 };
 
 class Frame {
   /* TODO: Put your lab5 code here */
+public:
+  std::list<frame::Access *> formals_;
+  // std::list<frame::Access *> locals_;
+  temp::Label *labels_;
+  std::list<tree::Stm *> view_shift_;
+  int offset_;
+
+  Frame(temp::Label *name, std::list<bool> formal) : labels_(name) { };
+  Frame() {};
+  virtual Access *AlloLocal(bool) = 0;
+  virtual temp::Temp *FramePointer() const = 0;
+  Access *get_static() { return this->formals_.front(); }
 };
 
 /**
@@ -132,7 +146,10 @@ private:
 };
 
 /* TODO: Put your lab5 code here */
-
+tree::Exp *ExternalCall(std::string, tree::ExpList *);
+std::list<tree::Stm *> ProcEntryExit1(Frame *frame, tree::Stm *Stm);
+assem::InstrList *ProcEntryExit2(assem::InstrList *body);
+assem::Proc *ProcEntryExit3(frame::Frame *frame, assem::InstrList *body);
 } // namespace frame
 
 #endif

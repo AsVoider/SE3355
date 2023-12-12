@@ -9,6 +9,7 @@
 #include "tiger/errormsg/errormsg.h"
 #include "tiger/frame/frame.h"
 #include "tiger/semant/types.h"
+#include "tiger/frame/x64frame.h"
 
 namespace tr {
 
@@ -57,12 +58,27 @@ public:
   Level *parent_;
 
   /* TODO: Put your lab5 code here */
+  Level(frame::Frame *frm, Level *pare) : frame_(frm), parent_(pare) { }
+  static Level *NewLevel(Level *pare, temp::Label *name, std::list<bool> &escapes) {
+    if (name->Name() != "tigermain") {
+      escapes.emplace_front(true);
+    }
+    return new Level(new frame::X64Frame(name, escapes), pare);
+  }
 };
 
 class ProgTr {
 public:
   // TODO: Put your lab5 code here */
 
+  ProgTr(std::unique_ptr<absyn::AbsynTree> absyn_tree, std::unique_ptr<err::ErrorMsg> errormsg) : 
+  absyn_tree_(std::move(absyn_tree)), errormsg_(std::move(errormsg)), 
+  tenv_(std::make_unique<env::TEnv>()),venv_(std::make_unique<env::VEnv>()) {
+    auto main_ = temp::LabelFactory::NamedLabel("tigermain");
+    std::list<bool> main_list;
+    frame::Frame *main_frame = new frame::X64Frame{main_, main_list};
+    main_level_ = std::make_unique<Level>(main_frame, nullptr);
+  }
   /**
    * Translate IR tree
    */
@@ -89,6 +105,7 @@ private:
   void FillBaseTEnv();
 };
 
+tree::Stm *list_seq(std::list<tree::Stm *> stms);
 } // namespace tr
 
 #endif
