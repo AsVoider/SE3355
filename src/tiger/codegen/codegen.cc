@@ -220,50 +220,74 @@ void MoveStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
     return;
   }
 
+
+  //fp -> sp
   if(typeid(*src_) == typeid(BinopExp)){
-    auto dst_reg = dst_->Munch(instr_list,fs);
-    auto src_bin = static_cast<BinopExp*>(src_);
-    if(src_bin->op_ == PLUS_OP){
-      if (typeid(*src_bin->left_) == typeid(ConstExp)) {
-          auto left = static_cast<ConstExp *>(src_bin->left_);
-          auto right_reg = src_bin->right_->Munch(instr_list, fs);
-          if (right_reg == reg_manager->FramePointer()) {
-            auto mov = "leaq (" + std::string(fs) + " + " + std::to_string(left->consti_) + ")(`s0), `d0";
-            instr_list.Append(new assem::OperInstr(
-              mov, new temp::TempList{dst_reg}, new temp::TempList{reg_manager->StackPointer()}, nullptr
-            ));
+    auto dst_temp = dst_->Munch(instr_list,fs);
+    auto src = static_cast<BinopExp*>(src_);
+    if(src->op_==PLUS_OP){
+      std::stringstream assem;
+      assem<<"leaq ";
+      if (typeid(*src->left_) == typeid(ConstExp)) {
+          auto left = static_cast<ConstExp *>(src->left_);
+          auto right_temp = src->right_->Munch(instr_list, fs);
+          if (right_temp == reg_manager->FramePointer()) {
+            assem<<"("<<fs;
+            if(left->consti_>=0){
+              assem<<"+";
+            }
+            assem<<left->consti_<<")(`s0)";
+            right_temp = reg_manager->StackPointer();
           } else {
-            auto mov = "leaq " + std::to_string(left->consti_) +"(`s0), `d0";
-            instr_list.Append(new assem::OperInstr(
-              mov, new temp::TempList{dst_reg}, new temp::TempList{right_reg}, nullptr
-            ));
+            assem<<left->consti_<<"(`s0)";
           }
+          assem<<",`d0";
+          instr_list.Append(
+            new assem::OperInstr(
+              assem.str(),
+              new temp::TempList(dst_temp),
+              new temp::TempList{right_temp},
+              nullptr
+            )
+          );
           return;
         }
-      if (typeid(*src_bin->right_) == typeid(ConstExp)) {
-          auto right = static_cast<ConstExp *>(src_bin->right_);
-          auto left_reg = src_bin->left_->Munch(instr_list, fs);
-          if (left_reg == reg_manager->FramePointer()) {
-            auto mov = "leaq (" + std::string(fs) + " + " +std::to_string(right->consti_) + ")(`s0), `d0";
-            instr_list.Append(new assem::OperInstr(
-              mov, new temp::TempList{dst_reg}, new temp::TempList{reg_manager->StackPointer()}, nullptr
-            ));
+      if (typeid(*src->right_) == typeid(ConstExp)) {
+          auto right = static_cast<ConstExp *>(src->right_);
+          auto left_temp = src->left_->Munch(instr_list, fs);
+          if (left_temp == reg_manager->FramePointer()) {
+            assem<<"("<<fs;
+            if(right->consti_>=0){
+              assem<<"+";
+            }
+            assem<<right->consti_<<")(`s0)";
+            left_temp = reg_manager->StackPointer();
           } else {
-            auto mov = "leaq " + std::to_string(right->consti_) + "(`s0), `d0";
-            instr_list.Append(new assem::OperInstr(
-              mov, new temp::TempList{dst_reg}, new temp::TempList{left_reg}, nullptr
-            ));
+            assem<<right->consti_<<"(`s0)";
           }
+          assem<<",`d0";
+          instr_list.Append(
+            new assem::OperInstr(
+              assem.str(),
+              new temp::TempList(dst_temp),
+              new temp::TempList{left_temp},
+              nullptr
+            )
+          );
           return;
         }
 
-      auto mov = "leaq (`s0, `s1), `d0";
-      auto left_temp = src_bin->left_->Munch(instr_list,fs);
-      auto right_temp = src_bin->right_->Munch(instr_list,fs);
+      assem<<"(`s0,`s1),`d0";
+      auto left_temp = src->left_->Munch(instr_list,fs);
+      auto right_temp = src->right_->Munch(instr_list,fs);
       instr_list.Append(
         new assem::OperInstr(
-          mov, new temp::TempList(dst_reg), new temp::TempList{left_temp, right_temp}, nullptr
-        ));
+          assem.str(),
+          new temp::TempList(dst_temp),
+          new temp::TempList{left_temp,right_temp},
+          nullptr
+        )
+      );
       return;
     }
 
