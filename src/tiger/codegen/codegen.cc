@@ -223,74 +223,58 @@ void MoveStm::Munch(assem::InstrList &instr_list, std::string_view fs) {
 
   //fp -> sp
   if(typeid(*src_) == typeid(BinopExp)){
-    auto dst_temp = dst_->Munch(instr_list,fs);
-    auto src = static_cast<BinopExp*>(src_);
-    if(src->op_==PLUS_OP){
+    auto dst_reg = dst_->Munch(instr_list,fs);
+    auto src_bin = static_cast<BinopExp*>(src_);
+    if(src_bin->op_ == PLUS_OP){
       std::stringstream assem;
-      assem<<"leaq ";
-      if (typeid(*src->left_) == typeid(ConstExp)) {
-          auto left = static_cast<ConstExp *>(src->left_);
-          auto right_temp = src->right_->Munch(instr_list, fs);
-          if (right_temp == reg_manager->FramePointer()) {
-            assem<<"("<<fs;
-            if(left->consti_>=0){
-              assem<<"+";
-            }
-            assem<<left->consti_<<")(`s0)";
-            right_temp = reg_manager->StackPointer();
-          } else {
-            assem<<left->consti_<<"(`s0)";
-          }
-          assem<<",`d0";
-          instr_list.Append(
-            new assem::OperInstr(
-              assem.str(),
-              new temp::TempList(dst_temp),
-              new temp::TempList{right_temp},
-              nullptr
-            )
-          );
-          return;
+      assem << "leaq ";
+      if (typeid(*src_bin->left_) == typeid(ConstExp)) {
+        auto left = static_cast<ConstExp *>(src_bin->left_);
+        auto right_temp = src_bin->right_->Munch(instr_list, fs);
+        if (right_temp == reg_manager->FramePointer()) {
+          assem << "(" <<fs;
+          // if(left->consti_>=0){
+             assem << "+";
+          // }
+          assem << left->consti_ << ")(`s0)";
+          right_temp = reg_manager->StackPointer();
+        } else {
+          assem << left->consti_ << "(`s0)";
         }
-      if (typeid(*src->right_) == typeid(ConstExp)) {
-          auto right = static_cast<ConstExp *>(src->right_);
-          auto left_temp = src->left_->Munch(instr_list, fs);
-          if (left_temp == reg_manager->FramePointer()) {
-            assem<<"("<<fs;
-            if(right->consti_>=0){
-              assem<<"+";
-            }
-            assem<<right->consti_<<")(`s0)";
-            left_temp = reg_manager->StackPointer();
-          } else {
-            assem<<right->consti_<<"(`s0)";
-          }
-          assem<<",`d0";
-          instr_list.Append(
-            new assem::OperInstr(
-              assem.str(),
-              new temp::TempList(dst_temp),
-              new temp::TempList{left_temp},
-              nullptr
-            )
-          );
-          return;
+        assem<<",`d0";
+        instr_list.Append(new assem::OperInstr(
+          assem.str(), new temp::TempList(dst_reg), new temp::TempList{right_temp}, nullptr
+        ));
+        return;
+      }
+      if (typeid(*src_bin->right_) == typeid(ConstExp)) {
+        auto right = static_cast<ConstExp *>(src_bin->right_);
+        auto left_temp = src_bin->left_->Munch(instr_list, fs);
+        if (left_temp == reg_manager->FramePointer()) {
+          assem << "(" << fs;
+          // if(right->consti_ >= 0){
+             assem << "+";
+          // }
+          assem << right->consti_ << ")(`s0)";
+          left_temp = reg_manager->StackPointer();
+        } else {
+          assem << right->consti_ << "(`s0)";
         }
+        assem << ",`d0";
+        instr_list.Append(new assem::OperInstr(
+            assem.str(), new temp::TempList(dst_reg), new temp::TempList{left_temp}, nullptr
+        ));
+        return;
+      }
 
-      assem<<"(`s0,`s1),`d0";
-      auto left_temp = src->left_->Munch(instr_list,fs);
-      auto right_temp = src->right_->Munch(instr_list,fs);
-      instr_list.Append(
-        new assem::OperInstr(
-          assem.str(),
-          new temp::TempList(dst_temp),
-          new temp::TempList{left_temp,right_temp},
-          nullptr
-        )
-      );
-      return;
+      std::string mov = "leaq (`s0,`s1), `d0";
+      auto left_temp = src_bin->left_->Munch(instr_list,fs);
+      auto right_temp = src_bin->right_->Munch(instr_list,fs);
+      instr_list.Append(new assem::OperInstr(
+        mov, new temp::TempList(dst_reg), new temp::TempList{left_temp,right_temp}, nullptr
+      ));
+    return;
     }
-
   }
   
   auto src_reg = src_->Munch(instr_list,fs);

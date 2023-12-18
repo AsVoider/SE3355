@@ -132,12 +132,6 @@ void Color::Coalesce() {
     bool geo = true;
     if (precolored.count(paired.first->NodeInfo()) && !precolored.count(paired.second->NodeInfo())) {
         auto adjs = Adjacent(paired.second)->GetList();
-        // for (auto &adj : adjs) {
-        //     if (!OK(adj, paired.first)) {
-        //         geo = false;
-        //         break;
-        //     }
-        // }
         geo = AllOK(adjs, paired.first);
     }
 

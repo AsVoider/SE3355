@@ -74,8 +74,8 @@ assem::InstrList *RegAllocator::ReWrite(std::list<temp::Temp *> &news) {
                     assem_lang, new temp::TempList{tmp}, new temp::TempList{rsp}, nullptr
                 );
                 tmp_inses.emplace_back(new_ins);
-                news.emplace_back(tmp);
                 src->Replace(spill_temp, tmp);
+                news.emplace_back(tmp);
             }
 
             if (dst && dst->Contain(spill_temp)) {
