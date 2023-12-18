@@ -65,6 +65,26 @@ public:
   TempList(std::initializer_list<Temp *> list) : temp_list_(list) {}
   TempList() = default;
   void Append(Temp *t) { temp_list_.push_back(t); }
+  bool Contain(Temp *t) { 
+    for (auto &iter : temp_list_)
+      if (iter == t)
+        return true;
+    return false;
+  }
+  void Replace(Temp *t1, Temp *t2) {
+    auto iter = temp_list_.begin();
+    while (1) {
+      if (*iter == t1) {
+        iter = temp_list_.erase(iter);
+        iter = temp_list_.insert(iter, t2);
+        if (iter == temp_list_.end())
+          break;
+      }
+      iter++;
+      if (iter == temp_list_.end())
+        break;
+    }
+  }
   [[nodiscard]] Temp *NthTemp(int i) const;
   [[nodiscard]] const std::list<Temp *> &GetList() const { return temp_list_; }
 

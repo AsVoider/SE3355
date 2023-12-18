@@ -267,6 +267,7 @@ public:
   std::list<Exp *> &GetNonConstList() { return exp_list_; }
   const std::list<Exp *> &GetList() { return exp_list_; }
   temp::TempList *MunchArgs(assem::InstrList &instr_list, std::string_view fs);
+  void PopFront() {exp_list_.pop_front();}
 
 private:
   std::list<Exp *> exp_list_;

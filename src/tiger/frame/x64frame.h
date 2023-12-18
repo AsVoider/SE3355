@@ -22,6 +22,7 @@ public:
   [[nodiscard]] temp::Temp *FramePointer() override;
   [[nodiscard]] temp::Temp *StackPointer() override;
   [[nodiscard]] temp::Temp *ReturnValue() override;
+  [[nodiscard]] temp::TempList *ExceptRsp() override;
 };
 
 class X64Frame : public Frame {

@@ -84,6 +84,20 @@ temp::TempList *X64RegManager::Registers() {
   return reg;
 }
 
+temp::TempList *X64RegManager::ExceptRsp() {
+  std::list<temp::Temp *> regs(regs_.begin(), regs_.end());
+  auto iter = regs.begin();
+  for (auto i = 0; i < 7; i++) {
+    iter++;
+  }
+  regs.erase(iter);
+  auto ret = new temp::TempList{};
+  for (auto &tmp : regs) {
+    ret->Append(tmp);
+  }
+  return ret;
+}
+
 temp::TempList *X64RegManager::ArgRegs() {
   return new temp::TempList({this->regs_[5], this->regs_[4], this->regs_[3], this->regs_[2], this->regs_[8], this->regs_[9]});
 }
@@ -164,12 +178,14 @@ tree::Exp *ExternalCall(std::string str, tree::ExpList *args) {
 std::list<tree::Stm *> ProcEntryExit1(Frame *frame, tree::Stm *stm) {
   std::list<tree::Stm *> stmlist;
   auto callee = reg_manager->CalleeSaves()->GetList();
-  std::vector<temp::Temp *> saved;
+  std::vector<Access *> saved;
+  auto frameptr = new tree::TempExp(reg_manager->FramePointer());
 
   for (auto &reg : callee) {
-    auto temp = temp::TempFactory::NewTemp();
-    saved.emplace_back(temp);
-    stmlist.emplace_back(new tree::MoveStm(new tree::TempExp(temp), new tree::TempExp(reg)));
+    // auto temp = temp::TempFactory::NewTemp();
+    auto acc = frame->AlloLocal(true);
+    saved.emplace_back(acc);
+    stmlist.emplace_back(new tree::MoveStm(acc->ToExp(frameptr), new tree::TempExp(reg)));
   }
 
   auto view = frame->view_shift_;
@@ -179,7 +195,7 @@ std::list<tree::Stm *> ProcEntryExit1(Frame *frame, tree::Stm *stm) {
   auto callee_iter = callee.begin();
   auto save_iter = saved.begin();
   for (; callee_iter != callee.end() && save_iter != saved.end(); callee_iter++, save_iter++) {
-    stmlist.emplace_back(new tree::MoveStm(new tree::TempExp(*callee_iter), new tree::TempExp(*save_iter)));
+    stmlist.emplace_back(new tree::MoveStm(new tree::TempExp(*callee_iter), (*save_iter)->ToExp(frameptr)));
   }
   return stmlist;
 }
