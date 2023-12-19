@@ -67,7 +67,7 @@ public:
   void Freeze();
   void SelectSpill();
   void Assign();
-  void Exe();
+  Result Exe();
 
   Result res;
 

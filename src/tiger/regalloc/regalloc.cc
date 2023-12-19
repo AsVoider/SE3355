@@ -6,20 +6,22 @@ extern frame::RegManager *reg_manager;
 
 namespace ra {
 /* TODO: Put your lab6 code here */
+void RegAllocator::Prepare() {
+    auto flow_fac = fg::FlowGraphFactory(instr_list_->GetInstrList());
+    flow_fac.AssemFlowGraph();
+    auto fptr = flow_fac.GetFlowGraph();
+    auto live_fac = live::LiveGraphFactory(fptr);
+    live_fac.Liveness();
+    this->live_graph = live_fac.GetLiveGraph();
+}
+
 void RegAllocator::RegAlloc() {
     bool ed = false;
     while (true) {
-        fg::FlowGraphFactory flow_fac(instr_list_->GetInstrList());
-        flow_fac.AssemFlowGraph();
-        fg::FGraphPtr fptr = flow_fac.GetFlowGraph();
-
-        live::LiveGraphFactory live_fac(fptr);
-        live_fac.Liveness();
-        auto live_graph = live_fac.GetLiveGraph();
+        Prepare();
 
         col::Color coloring(live_graph);
-        coloring.Exe();
-        auto res = coloring.res;
+        auto res = coloring.Exe();
         Colors = res.coloring;
         spills = res.spills;
 
@@ -28,6 +30,7 @@ void RegAllocator::RegAlloc() {
         new_temps.clear();
         auto newIns = ReWrite(new_temps);
         instr_list_ = new cg::AssemInstr(newIns);
+        //delete live_graph;
     }
 
     auto instrs = instr_list_->GetInstrList()->GetList();

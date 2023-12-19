@@ -44,6 +44,7 @@ struct LiveGraph {
 
   LiveGraph(IGraphPtr interf_graph, MoveList *moves)
       : interf_graph(interf_graph), moves(moves) {}
+  LiveGraph() {};
 };
 
 class LiveGraphFactory {

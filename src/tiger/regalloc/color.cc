@@ -93,16 +93,17 @@ void Color::AddEdge(live::INodePtr s, live::INodePtr d) {
 
 void Color::MakeWorkList() {
     for (auto &node : ini->GetList()) {
-        if (precolored.count(node->NodeInfo()))
-            continue;
-        if (degrees[node] >= 15)
-            spill_work->Append(node);
-        else if (MoveRelated(node)) {
-            freeze_work->Append(node);
-        } else {
-            simplify_work->Append(node);
-        }
-        
+        // if (precolored.count(node->NodeInfo()))
+        //     continue;
+        if (!precolored.count(node->NodeInfo())) {
+            if (degrees[node] >= 15)
+                spill_work->Append(node);
+            else if (MoveRelated(node)) {
+                freeze_work->Append(node);
+            } else {
+                simplify_work->Append(node);
+            }
+        }      
     }
 }
 
@@ -201,20 +202,20 @@ void Color::Assign() {
             colored_node->Append(n);
             auto sz = colors.size();
             auto frt = *colors.begin();
-            bool find  = false;
-            temp::Temp *acc;
-            for (auto &iter : colors) {
-                acc = reg_manager->GetRegister(iter);
-                bool contain = false;
-                for (auto &it : callersave->GetList()) {
-                    if (acc == it)
-                        contain = true;
-                }
-                if (contain) {
-                    frt = iter;
-                    break;
-                }
-            }
+            // bool find  = false;
+            // temp::Temp *acc;
+            // for (auto &iter : colors) {
+            //     acc = reg_manager->GetRegister(iter);
+            //     bool contain = false;
+            //     for (auto &it : callersave->GetList()) {
+            //         if (acc == it)
+            //             contain = true;
+            //     }
+            //     if (contain) {
+            //         frt = iter;
+            //         break;
+            //     }
+            // }
             color[n->NodeInfo()] = frt;
         }
     }
@@ -224,7 +225,7 @@ void Color::Assign() {
     }
 }
 
-void Color::Exe() {
+Result Color::Exe() {
     Build();
     MakeWorkList();
     do {
@@ -247,6 +248,7 @@ void Color::Exe() {
     }
     res.spills = new live::INodeList();
     res.spills->CatList(spill_node);
+    return res;
 }
 
 bool Color::MoveRelated(live::INodePtr  ptr) {
@@ -332,6 +334,11 @@ void Color::Combine(live::INodePtr s, live::INodePtr d) {
     for (auto &adj : adjlist) {
         AddEdge(adj, s);
         Decrement(adj);
+    }
+
+    if (degrees[s] >= 15 && freeze_work->Contain(s)) {
+        freeze_work->DeleteNode(s);
+        spill_work->Append(s);
     }
 }
 

@@ -35,13 +35,14 @@ public:
   std::list<temp::Temp *> new_temps;
   temp::Map *Colors;
   live::INodeListPtr spills;
+  live::LiveGraph live_graph;
   RegAllocator(frame::Frame *fr, std::unique_ptr<cg::AssemInstr> instrlist) :frame_(fr), instr_list_(
     new cg::AssemInstr(instrlist->GetInstrList())) {
       spills = new live::INodeList();
       Colors = nullptr;
     }
   void RegAlloc();
-  // void Prepare()
+  void Prepare();
   assem::InstrList *ReWrite(std::list<temp::Temp *> &);
   std::unique_ptr<ra::Result> TransferResult();
 };
